@@ -89,35 +89,24 @@ int safe_fread(void *buf, fluid_long_long_t count, void *fd)
 
 int safe_fseek(void *fd, fluid_long_long_t ofs, int whence)
 {
-    int res;
+    int res == 0;
 
-#ifdef WIN32
-    /*
-     * Borrowed from MinGW, to support Win98 et. al.
-     * https://osdn.net/projects/mingw/ticket/38225
-     *
-     * Emulate _fseeki64() on the basis of the underlying OS data stream
-     * pointer, as manipulated by the _lseeki64() function, (which, unlike
-     * the _fseeki64() function, has been exported from all known versions
-     * of MSVCRT.DLL).  Note that, unlike a previous MinGW implementation of
-     * the effectively equivalent fseeko64() function, this does not rely on
-     * any undocumented assumptions regarding the (opaque) content of fpos_t
-     * data, returned by the fgetpos() function; however, it does first use
-     * fgetpos(), followed by fsetpos(), without moving the FILE stream
-     * pointer, to ensure that the internal buffer associated with the FILE
-     * stream is marked as "clean", and thus that the FILE stream pointer
-     * is synchronized with the underlying OS data stream pointer, before
-     * calling _lseeki64() to adjust the latter; (this has the effect of
-     * keeping the two pointers synchronized, following the adjustment
-     * resulting from the _lseeki64() call).
-     */
-    fpos_t pos;
-    res = ((fgetpos(fd, &pos) == 0) && (fsetpos(fd, &pos) == 0))
-      ? ((_lseeki64( _fileno(fd), ofs, whence ) == ((__int64)-1L)) ? FLUID_FAILED : 0)
-      : FLUID_FAILED;
-#else
-    res = FLUID_FSEEK((FILE *)fd, ofs, whence);
-#endif
+    const int direction = ofs<0 ? -1 : 1;
+    ofs = abs(ofs);
+
+    while(ofs > LONG_MAX && res == 0)
+    {
+        res = fseek(fp, direction * LONG_MAX, whence);
+        ofs -= LONG_MAX;
+
+        // make sure the next fseek uses the current position
+        whence = SEEK_CUR;
+    }
+
+    if(res == 0)
+    {
+        res = fseek(fp, direction * ofs, whence);
+    }
 
     if(res != 0)
     {
