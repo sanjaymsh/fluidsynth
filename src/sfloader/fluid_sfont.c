@@ -89,14 +89,14 @@ int safe_fread(void *buf, fluid_long_long_t count, void *fd)
 
 int safe_fseek(void *fd, fluid_long_long_t ofs, int whence)
 {
-    int res == 0;
+    int res = 0;
 
     const int direction = ofs<0 ? -1 : 1;
     ofs = abs(ofs);
 
     while(ofs > LONG_MAX && res == 0)
     {
-        res = fseek(fp, direction * LONG_MAX, whence);
+        res = fseek(fd, direction * LONG_MAX, whence);
         ofs -= LONG_MAX;
 
         // make sure the next fseek uses the current position
@@ -105,7 +105,7 @@ int safe_fseek(void *fd, fluid_long_long_t ofs, int whence)
 
     if(res == 0)
     {
-        res = fseek(fp, direction * ofs, whence);
+        res = fseek(fd, direction * ofs, whence);
     }
 
     if(res != 0)
