@@ -328,6 +328,8 @@ static void delete_zone(SFZone *zone);
 static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigned int end_byte, short **data);
 static int fluid_sffile_read_wav(SFData *sf, unsigned int start, unsigned int end, short **data, char **data24);
 
+
+extern int safe_fseek(void *fd, fluid_long_long_t ofs, int whence);
 /**
  * Check if a file is a SoundFont file.
  *
@@ -361,7 +363,7 @@ int fluid_is_soundfont(const char *filename)
             break;
         }
 
-        if(FLUID_FSEEK(fp, 4, SEEK_CUR))
+        if(safe_fseek(fp, 4, SEEK_CUR))
         {
             break;
         }
