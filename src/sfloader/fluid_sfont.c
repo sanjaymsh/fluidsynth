@@ -42,7 +42,30 @@ int default_fclose(void *handle)
 
 fluid_long_long_t default_ftell(void *handle)
 {
+#ifdef WIN32
+    /*
+     * Borrowed from MinGW, to support Win98 et. al.
+     * https://osdn.net/projects/mingw/ticket/38225
+     *
+     * Emulate _ftelli64() on the basis of the underlying OS data stream
+     * pointer, as returned by the _telli64() function, (which, unlike the
+     * _ftelli64() function, has been exported from all known versions of
+     * MSVCRT.DLL).  Note that, unlike a previous MinGW implementation of
+     * the effectively equivalent ftello64() function, this does not rely
+     * on any undocumented assumptions regarding the content of the opaque
+     * fpos_t data, returned by the fgetpos() function; however, it does
+     * still require the use of fgetpos(), followed by fsetpos(), without
+     * moving the FILE stream pointer, to ensure that the internal buffer
+     * associated with the FILE stream is marked as "clean", and thus that
+     * the FILE stream pointer is synchronized with the underlying OS data
+     * stream pointer, before reading the latter.
+     */
+    fpos_t pos;
+    return ((fgetpos( stream, &pos ) == 0) && (fsetpos( stream, &pos ) == 0))
+      ? _telli64( _fileno( stream )) : -1;
+#else
     return FLUID_FTELL((FILE *)handle);
+#endif
 }
 
 int safe_fread(void *buf, fluid_long_long_t count, void *fd)
@@ -66,7 +89,37 @@ int safe_fread(void *buf, fluid_long_long_t count, void *fd)
 
 int safe_fseek(void *fd, fluid_long_long_t ofs, int whence)
 {
-    if(FLUID_FSEEK((FILE *)fd, ofs, whence) != 0)
+    int res;
+
+#ifdef WIN32
+    /*
+     * Borrowed from MinGW, to support Win98 et. al.
+     * https://osdn.net/projects/mingw/ticket/38225
+     *
+     * Emulate _fseeki64() on the basis of the underlying OS data stream
+     * pointer, as manipulated by the _lseeki64() function, (which, unlike
+     * the _fseeki64() function, has been exported from all known versions
+     * of MSVCRT.DLL).  Note that, unlike a previous MinGW implementation of
+     * the effectively equivalent fseeko64() function, this does not rely on
+     * any undocumented assumptions regarding the (opaque) content of fpos_t
+     * data, returned by the fgetpos() function; however, it does first use
+     * fgetpos(), followed by fsetpos(), without moving the FILE stream
+     * pointer, to ensure that the internal buffer associated with the FILE
+     * stream is marked as "clean", and thus that the FILE stream pointer
+     * is synchronized with the underlying OS data stream pointer, before
+     * calling _lseeki64() to adjust the latter; (this has the effect of
+     * keeping the two pointers synchronized, following the adjustment
+     * resulting from the _lseeki64() call).
+     */
+    fpos_t pos;
+    res = ((fgetpos(fd, &pos) == 0) && (fsetpos(fd, &pos) == 0))
+      ? ((_lseeki64( _fileno(fd), ofs, whence ) == ((__int64)-1L)) ? -1 : 0)
+      : -1;
+#else
+    res = FLUID_FSEEK((FILE *)fd, ofs, whence);
+#endif
+
+    if(res != 0)
     {
         FLUID_LOG(FLUID_ERR, "File seek failed with offset = %lld and whence = %d", ofs, whence);
         return FLUID_FAILED;
