@@ -62,7 +62,7 @@ fluid_long_long_t default_ftell(void *handle)
      */
     fpos_t pos;
     return ((fgetpos( handle, &pos ) == 0) && (fsetpos( handle, &pos ) == 0))
-      ? _telli64( _fileno( handle )) : -1;
+      ? _telli64( _fileno( handle )) : ((fluid_long_long_t)FLUID_FAILED);
 #else
     return FLUID_FTELL((FILE *)handle);
 #endif
@@ -113,8 +113,8 @@ int safe_fseek(void *fd, fluid_long_long_t ofs, int whence)
      */
     fpos_t pos;
     res = ((fgetpos(fd, &pos) == 0) && (fsetpos(fd, &pos) == 0))
-      ? ((_lseeki64( _fileno(fd), ofs, whence ) == ((__int64)-1L)) ? -1 : 0)
-      : -1;
+      ? ((_lseeki64( _fileno(fd), ofs, whence ) == ((__int64)-1L)) ? FLUID_FAILED : 0)
+      : FLUID_FAILED;
 #else
     res = FLUID_FSEEK((FILE *)fd, ofs, whence);
 #endif
