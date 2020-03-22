@@ -61,8 +61,8 @@ fluid_long_long_t default_ftell(void *handle)
      * stream pointer, before reading the latter.
      */
     fpos_t pos;
-    return ((fgetpos( stream, &pos ) == 0) && (fsetpos( stream, &pos ) == 0))
-      ? _telli64( _fileno( stream )) : -1;
+    return ((fgetpos( handle, &pos ) == 0) && (fsetpos( handle, &pos ) == 0))
+      ? _telli64( _fileno( handle )) : -1;
 #else
     return FLUID_FTELL((FILE *)handle);
 #endif
