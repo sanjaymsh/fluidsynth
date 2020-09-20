@@ -42,10 +42,10 @@ $(OBOE):
 
 .PHONY: checkout-cerbero
 checkout-cerbero: $(CERBERO)
-	cd $(CERBERO) && git checkout 1f9fea6
+	cd $(CERBERO) && git checkout 7a55b396c380c47733b7a38ddae976656cde37f7
 
 $(CERBERO):
-	git clone https://github.com/atsushieno/cerbero.git $(CERBERO)
+	git clone https://github.com/GStreamer/cerbero $(CERBERO)
 
 .PHONY: build
 build: build-oboe dist-oboe build-deps-cerbero dist-deps-cerbero build-fluidsynth dist-fluidsynth build-fluidsynth-assetloader dist-fluidsynth-assetloader
